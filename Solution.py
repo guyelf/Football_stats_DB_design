@@ -89,9 +89,9 @@ def getMatchProfile(matchID: int) -> Match:
         conn.close()
         return Match(*_selected_rows[0])  # unpack of the tuple (should be only one)
 
-# todo: check answer on piattza regarding the use of rows_affected
+# confirmed it's ok to use IF on rows_effected based on:
 # todo: https://piazza.com/class/kqz4dh15z2p1m1?cid=74
-# todo: redo the whole thing
+
 def deleteMatch(match: Match) -> ReturnValue:
     conn = None
     try:
@@ -99,16 +99,10 @@ def deleteMatch(match: Match) -> ReturnValue:
         query = sql.SQL("DELETE FROM matches " +
                         "WHERE match_id = {matchID}").format(matchID=sql.Literal(match.getMatchID()))
         rows_effected, _selected_rows = conn.execute(query)
+        if rows_effected == 0:
+            return ReturnValue.NOT_EXISTS
     except DatabaseException.ConnectionInvalid as e:
         return ReturnValue.ERROR
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        return ReturnValue.ALREADY_EXISTS
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        return ReturnValue.BAD_PARAMS
-    except DatabaseException.CHECK_VIOLATION as e:
-        return ReturnValue.BAD_PARAMS
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        return ReturnValue.BAD_PARAMS
     except Exception as e:
         print(e)
     finally:
@@ -159,9 +153,23 @@ def getPlayerProfile(playerID: int) -> Player:
         conn.close()
         return Player(*_selected_rows[0])  # unpack of the tuple (should be only one)
 
-# todo: https://piazza.com/class/kqz4dh15z2p1m1?cid=74
+
 def deletePlayer(player: Player) -> ReturnValue:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("DELETE FROM players " +
+                        "WHERE player_id = {playerID}").format(playerID=sql.Literal(player.getPlayerID()))
+        rows_effected, _selected_rows = conn.execute(query)
+        if rows_effected == 0:
+            return ReturnValue.NOT_EXISTS
+    except DatabaseException.ConnectionInvalid as e:
+        return ReturnValue.ERROR
+    except Exception as e:
+        print(e)
+    finally:
+        conn.close()
+        return ReturnValue.OK
 
 
 def addStadium(stadium: Stadium) -> ReturnValue:
@@ -209,9 +217,22 @@ def getStadiumProfile(stadiumID: int) -> Stadium:
         return Stadium(*_selected_rows[0])  # unpack of the tuple (should be only one - id is pk)
 
 
-# todo: https://piazza.com/class/kqz4dh15z2p1m1?cid=74
 def deleteStadium(stadium: Stadium) -> ReturnValue:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("DELETE FROM stadiums " +
+                        "WHERE stadium_id = {stadiumID}").format(stadiumID=sql.Literal(stadium.getStadiumID()))
+        rows_effected, _selected_rows = conn.execute(query)
+        if rows_effected == 0:
+            return ReturnValue.NOT_EXISTS
+    except DatabaseException.ConnectionInvalid as e:
+        return ReturnValue.ERROR
+    except Exception as e:
+        print(e)
+    finally:
+        conn.close()
+        return ReturnValue.OK
 
 
 def playerScoredInMatch(match: Match, player: Player, amount: int) -> ReturnValue:
