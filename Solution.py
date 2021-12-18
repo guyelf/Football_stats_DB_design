@@ -264,23 +264,92 @@ def averageAttendanceInStadium(stadiumID: int) -> float:
 
 
 def stadiumTotalGoals(stadiumID: int) -> int:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT SUM(num_goals) " +
+                        "FROM goals " +
+                        "WHERE stadium_id = {stadiumID} " +
+                        "GROUP BY stadium_id ").format(stadiumID=sql.Literal(stadiumID))
+        rows_effected, _selected_rows = conn.execute(query)
+
+        if len(_selected_rows) == 0:
+            return 0
+
+    except Exception as e:
+        return -1
+    finally:
+        conn.close()
+        return _selected_rows.rows[0][0] # should be one value
 
 
 def playerIsWinner(playerID: int, matchID: int) -> bool:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT g.player_id " +
+                        "FROM goals g INNER JOIN total_goals_view tg USING(match_id)" +
+                        "WHERE g.player_id = {playerID} AND g.match_id = {matchID} AND g.NumGoals >= (0.5*tg.sum_goals) ").format(matchID=sql.Literal(matchID), playerID=sql.Literal(playerID))
+        rows_effected, _selected_rows = conn.execute(query)
+
+        if len(_selected_rows) == 0:
+            return False
+    except Exception as e:
+        return False
+    finally:
+        conn.close()
+        return _selected_rows.rows[0][0]  # should be one value --> player_id =! 0 --> which is equals to TRUE
 
 
 def getActiveTallTeams() -> List[int]:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT team_id " +
+                        "FROM active_tall_teams_view  " +
+                        "ORDER BY p.team_id desc " +
+                        "LIMIT 5 ")
+        rows_effected, _selected_rows = conn.execute(query)
+
+    except Exception as e:
+        return []
+    finally:
+        conn.close()
+        return _selected_rows.rows # should return a list
 
 
 def getActiveTallRichTeams() -> List[int]:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT DISTINCT a.team_id " +
+                        "FROM active_tall_teams_view a INNER JOIN rich_teams_view r USING (team_id) " +
+                        "ORDER BY a.team_id asc " +
+                        "LIMIT 5  ")
+        rows_effected, _selected_rows = conn.execute(query)
+
+    except Exception as e:
+        return []
+    finally:
+        conn.close()
+        return _selected_rows.rows  # should return a list
 
 
 def popularTeams() -> List[int]:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT team_id " +
+                        "FROM popular_teams_view  " +
+                        "ORDER BY team_id desc " +
+                        "LIMIT 10 ")
+        rows_effected, _selected_rows = conn.execute(query)
+
+    except Exception as e:
+        return []
+    finally:
+        conn.close()
+        return _selected_rows.rows  # should return a list
 
 # 3.4 Advanced API - done
 
@@ -323,10 +392,11 @@ def getClosePlayers(playerID: int) -> List[int]:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("SELECT player_id " +
+        query = sql.SQL("SELECT close_players " +
                         "FROM close_players_view " +
-                        "ORDER BY player_id asc " +
-                        "LIMIT 10 ")
+                        "WHERE score_player = {playerID} "
+                        "ORDER BY close_players asc " +
+                        "LIMIT 10 ").format(playerID=sql.Literal(playerID))
         rows_effected, _selected_rows = conn.execute(query)
 
     except Exception as e:
