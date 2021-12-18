@@ -147,6 +147,9 @@ def getPlayerProfile(playerID: int) -> Player:
                         "FROM players " +
                         "WHERE player_id = {playerID}").format(playerID=sql.Literal(playerID))
         rows_effected, _selected_rows = conn.execute(query)
+
+        if len(_selected_rows.rows) == 0:  # No rows were fetched for that player.
+            return ReturnValue.NOT_EXISTS;
     except Exception as e:
         return Player.badPlayer()
     finally:
@@ -210,6 +213,9 @@ def getStadiumProfile(stadiumID: int) -> Stadium:
                         "FROM stadiums " +
                         "WHERE stadium_id = {stadiumID}").format(stadiumID=sql.Literal(stadiumID))
         rows_effected, _selected_rows = conn.execute(query)
+
+        if len(_selected_rows) == 0: # in case the stadium doesn't exist
+            return Stadium.badStadium()
     except Exception as e:
         return Stadium.badStadium()
     finally:
@@ -234,6 +240,8 @@ def deleteStadium(stadium: Stadium) -> ReturnValue:
         conn.close()
         return ReturnValue.OK
 
+# Part 3.3 Implementation - Basic API:
+#todo: How & Where to keep this data - which tables
 
 def playerScoredInMatch(match: Match, player: Player, amount: int) -> ReturnValue:
     pass
@@ -274,28 +282,69 @@ def getActiveTallRichTeams() -> List[int]:
 def popularTeams() -> List[int]:
     pass
 
+# 3.4 Advanced API - done
 
 def getMostAttractiveStadiums() -> List[int]:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT stadium_id " +
+                        "FROM attractive_stadiums_view " +
+                        "WHERE attractiveness > 0 " +
+                        "ORDER BY attractiveness desc, stadium_id asc ")
+        rows_effected, _selected_rows = conn.execute(query)
+
+    except Exception as e:
+        return []
+    finally:
+        conn.close()
+        return _selected_rows.rows # Should flat the list of tuples? - This will require more code in python
 
 
 def mostGoalsForTeam(teamID: int) -> List[int]:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT player_id " +
+                        "FROM top_players_view " +
+                        "WHERE team_id = {teamID} " +
+                        "ORDER BY num_goals desc, player_id desc " +
+                        "LIMIT 5 ").format(teamID=sql.Literal(teamID))
+        rows_effected, _selected_rows = conn.execute(query)
+
+    except Exception as e:
+        return []
+    finally:
+        conn.close()
+        return _selected_rows.rows
 
 
 def getClosePlayers(playerID: int) -> List[int]:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("SELECT player_id " +
+                        "FROM close_players_view " +
+                        "ORDER BY player_id asc " +
+                        "LIMIT 10 ")
+        rows_effected, _selected_rows = conn.execute(query)
+
+    except Exception as e:
+        return []
+    finally:
+        conn.close()
+        return _selected_rows.rows
 
 
 if __name__ == '__main__':
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("SELECT * FROM guy_test")
+        query = sql.SQL("SELECT first_name FROM guy_test WHERE person_id < 10")
         rows_affected, _selected_rows = conn.execute(query=query)
     except Exception as e:
         print(e)
     finally:
         conn.close()
-        print(_selected_rows)
-        print(rows_affected)
+        print("This is the #rows selected:" + _selected_rows)
+        #print(rows_affected)
