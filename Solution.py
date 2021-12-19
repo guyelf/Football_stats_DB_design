@@ -244,11 +244,56 @@ def deleteStadium(stadium: Stadium) -> ReturnValue:
 #todo: How & Where to keep this data - which tables
 
 def playerScoredInMatch(match: Match, player: Player, amount: int) -> ReturnValue:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("""
+                        INSERT INTO Goals
+                        VALUES({amount}, {player}, {match},
+                            (
+                            SELECT stadium_id
+                            FROM Spectators
+                            WHERE match_id = {match}
+                            )
+                        )
+                        """).format(player=sql.Literal(player.getPlayerID()), match=sql.Literal(match.getMatchID()), amount=sql.Literal(amount))
+        conn.execute(query)
+
+        return ReturnValue.OK
+
+    except DatabaseException.CHECK_VIOLATION as e:
+        return ReturnValue.BAD_PARAMS
+    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
+        return ReturnValue.NOT_EXISTS
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        return ReturnValue.ALREADY_EXISTS
+    except Exception as e:
+        return ReturnValue.ERROR
+    finally:
+        conn.close()
 
 
 def playerDidntScoreInMatch(match: Match, player: Player) -> ReturnValue:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("""
+                        DELETE FROM Goals
+                        WHERE player_id={player} AND match_id={match}
+                        """).format(player=sql.Literal(player.getPlayerID()), match=sql.Literal(match.getMatchID()))
+        rows_affected, _ = conn.execute(query)
+
+        if rows_affected == 0:
+            return ReturnValue.NOT_EXISTS
+        else:
+            return ReturnValue.OK
+
+
+    except Exception as e:
+        return ReturnValue.ERROR 
+    finally:
+        conn.close()
+
 
 
 def matchInStadium(match: Match, stadium: Stadium, attendance: int) -> ReturnValue:
