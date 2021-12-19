@@ -295,10 +295,8 @@ def addStadium(stadium: Stadium) -> ReturnValue:
         return ReturnValue.ERROR
     except DatabaseException.UNIQUE_VIOLATION as e:
         return ReturnValue.ALREADY_EXISTS
-# This is different than the others (Players/Matches) to enforce the case where a team has already owned the suggested stadium
     except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        return ReturnValue.ALREADY_EXISTS
-
+        return ReturnValue.BAD_PARAMS
     except DatabaseException.NOT_NULL_VIOLATION as e:
         return ReturnValue.BAD_PARAMS
     except DatabaseException.CHECK_VIOLATION as e:
