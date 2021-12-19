@@ -71,10 +71,8 @@ def createTables():
                             num_goals INTEGER check(num_goals >= 0),
                             player_id INTEGER NOT NULL,
                             match_id INTEGER NOT NULL,
-                            stadium_id INTEGER,
                             PRIMARY KEY (num_goals,player_id,match_id), --redundent to add the stadium match_id is unique enought here
                             FOREIGN KEY(player_id) REFERENCES players (player_id),
-                            FOREIGN KEY(stadium_id) REFERENCES stadiums (stadium_id) ON UPDATE CASCADE,
                             FOREIGN KEY(match_id) REFERENCES matches (match_id)
                             ON DELETE CASCADE
                         )
@@ -99,9 +97,16 @@ def createTables():
         # create all views
 
         query = sql.SQL("""
+                        CREATE VIEW goals_stadium_view AS
+                            SELECT g.num_goals, g.player_id, g.match_id, s.stadium_id
+                            FROM goals g INNER JOIN spectators s USING (match_id)
+                        """)
+        conn.execute(query)
+
+        query = sql.SQL("""
                         CREATE VIEW attractive_stadiums AS 
                             SELECT sum(num_goals) as attractiveness, stadium_id
-                            FROM goals
+                            FROM goals_stadium_view
                             GROUP BY stadium_id
                         """)
         conn.execute(query)
@@ -444,13 +449,7 @@ def playerScoredInMatch(match: Match, player: Player, amount: int) -> ReturnValu
         conn = Connector.DBConnector()
         query = sql.SQL("""
                         INSERT INTO Goals
-                        VALUES({amount}, {player}, {match},
-                            (
-                            SELECT stadium_id
-                            FROM Spectators
-                            WHERE match_id = {match}
-                            )
-                        )
+                        VALUES({amount}, {player}, {match})
                         """).format(player=sql.Literal(player.getPlayerID()), match=sql.Literal(match.getMatchID()), amount=sql.Literal(amount))
         conn.execute(query)
 
@@ -565,7 +564,7 @@ def stadiumTotalGoals(stadiumID: int) -> int:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("SELECT SUM(num_goals) " +
-                        "FROM goals " +
+                        "FROM goals_stadium_view " +
                         "WHERE stadium_id = {stadiumID} " +
                         "GROUP BY stadium_id ").format(stadiumID=sql.Literal(stadiumID))
         rows_effected, _selected_rows = conn.execute(query)
