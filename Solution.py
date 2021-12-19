@@ -26,10 +26,13 @@ def createTables():
         query = sql.SQL("""
                         CREATE TABLE players (
                             player_id INTEGER CHECK(player_id>0),
-                            team_id INTEGER,
-                            age INTEGER CHECK(age>0),
-                            height DECIMAL CHECK(height>0), 
-                            prefered_foot TEXT CHECK(UPPER(prefered_foot)='LEFT' OR UPPER(prefered_foot)='RIGHT'), 
+                            team_id INTEGER NOT NULL,
+                            age INTEGER NOT NULL,
+                            CHECK(age>0),
+                            height DECIMAL NOT NULL,
+                            CHECK(height>0), 
+                            prefered_foot TEXT NOT NULL,
+                            CHECK(UPPER(prefered_foot)='LEFT' OR UPPER(prefered_foot)='RIGHT'), 
                             PRIMARY KEY(player_id),
                             FOREIGN KEY(team_id) REFERENCES teams (team_id) ON DELETE CASCADE
                         )
@@ -51,9 +54,11 @@ def createTables():
         query = sql.SQL("""
                         CREATE TABLE matches (
                             match_id INTEGER CHECK(match_id>0),
-                            competition TEXT CHECK(UPPER(competition)='INTERNATIONAL' OR UPPER(competition)='DOMESTIC'),
-                            home_team_id INTEGER,
-                            away_team_id INTEGER CHECK(away_team_id != home_team_id),
+                            competition TEXT NOT NULL,
+                            CHECK(UPPER(competition)='INTERNATIONAL' OR UPPER(competition)='DOMESTIC'),
+                            home_team_id INTEGER NOT NULL,
+                            away_team_id INTEGER NOT NULL,
+                            CHECK(away_team_id != home_team_id),
                             PRIMARY KEY(match_id),
                             FOREIGN KEY(home_team_id) REFERENCES teams (team_id),
                             FOREIGN KEY(away_team_id) REFERENCES teams (team_id)
@@ -65,8 +70,8 @@ def createTables():
         query = sql.SQL("""
                         CREATE TABLE goals (
                             num_goals INTEGER check(num_goals >= 0),
-                            player_id INTEGER,
-                            match_id INTEGER,
+                            player_id INTEGER NOT NULL,
+                            match_id INTEGER NOT NULL,
                             stadium_id INTEGER,
                             PRIMARY KEY (num_goals,player_id,match_id), --redundent to add the stadium match_id is unique enought here
                             FOREIGN KEY(player_id) REFERENCES players (player_id),
@@ -80,7 +85,7 @@ def createTables():
         query = sql.SQL("""
                         CREATE TABLE spectators (
                             num_attendances INTEGER check(num_attendances >= 0),
-                            match_id INTEGER,
+                            match_id INTEGER NOT NULL,
                             stadium_id INTEGER,
                             FOREIGN KEY(stadium_id) REFERENCES stadiums (stadium_id),
                             FOREIGN KEY(match_id) REFERENCES matches (match_id)
@@ -190,8 +195,12 @@ def dropTables():
     try:
         conn = Connector.DBConnector()
 
-        query = sql.SQL("""
-                        DROP TABLE matches, players, stadiums, teams, goals, spectators CASCADE
+        # query = sql.SQL("""
+        #                 DROP TABLE matches, players, stadiums, teams, goals, spectators CASCADE
+        #                 """)
+        query = sql.SQL("""                        
+                        DROP SCHEMA public CASCADE;
+                        CREATE SCHEMA public;
                         """)
         conn.execute(query)
         
@@ -238,14 +247,14 @@ def addMatch(match: Match) -> ReturnValue:
 
     except DatabaseException.ConnectionInvalid as e:
         return ReturnValue.ERROR
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        return ReturnValue.ALREADY_EXISTS
     except DatabaseException.NOT_NULL_VIOLATION as e:
         return ReturnValue.BAD_PARAMS
     except DatabaseException.CHECK_VIOLATION as e:
         return ReturnValue.BAD_PARAMS
     except DatabaseException.FOREIGN_KEY_VIOLATION as e:
         return ReturnValue.BAD_PARAMS
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        return ReturnValue.ALREADY_EXISTS
     except Exception as e:
         print(e)
     finally:
@@ -536,13 +545,13 @@ def averageAttendanceInStadium(stadiumID: int) -> float:
                         SELECT AVG(numAttendance) FROM Spectators
                         WHERE stadium_id={stadium}
                         GROUP BY stadium_id
-                        """).format(stadium=sql.Literal(stadium.getStadiumID()))
+                        """).format(stadium=sql.Literal(stadiumID))
         rows_affected, output = conn.execute(query)
 
         if rows_affected == 0:
             return 0
         else:
-            return ouput[0][0]
+            return output[0][0]
 
     except Exception as e:
         return -1
