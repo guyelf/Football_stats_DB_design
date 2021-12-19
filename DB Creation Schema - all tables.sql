@@ -3,41 +3,45 @@
 
  
  --DB CREATION PART - all the tables created hence not needed to re-run again. 
- 
- CREATE TABLE stadiums
-(stadium_id INTEGER CHECK(stadium_id>0),
- belongs_to_team INTEGER, 
- capacity INTEGER CHECK(capacity>0),
- PRIMARY KEY(stadium_id),
- UNIQUE (belongs_to_team)
- );
 
--- Add the line below after creating the Teams table to add the FK constraint between Stadiums and Teams tables.
--- ALTER TABLE stadiums ADD FOREIGN KEY (belongs_to_team) REFERENCES teams (team_id) ON DELETE CASCADE; 
-
-
-CREATE TABLE teams 
+ CREATE TABLE teams 
 (team_id INTEGER CHECK(player_id>0),
- stadium_id INTEGER,
  PRIMARY KEY(team_id),
- FOREIGN KEY(stadium_id) REFERENCES stadiums (stadium_id)
  ON DELETE CASCADE);
 
 
--- No need to add lines for Teams bc the Stadiums table exists. 
 
- 
-CREATE TABLE players 
+-- Depends on the creation of Teams first
+ CREATE TABLE players 
 (player_id INTEGER CHECK(player_id>0),
  team_id INTEGER,
  age INTEGER CHECK(age>0),
  height DECIMAL CHECK(height>0), 
  prefered_foot TEXT CHECK(UPPER(prefered_foot)='LEFT' OR UPPER(prefered_foot)='RIGHT'), 
- PRIMARY KEY(player_id)
+ PRIMARY KEY(player_id),
  FOREIGN KEY(team_id) REFERENCES teams (team_id) ON DELETE CASCADE
 );
--- Add the line  below to add the FK constraint between Players and Teams tables.
--- ALTER TABLE players ADD FOREIGN KEY (team_id) REFERENCES teams (team_id) ON DELETE CASCADE; 
+
+
+-- Depends on the creation of Teams first
+ CREATE TABLE stadiums
+(stadium_id INTEGER CHECK(stadium_id>0),
+ belongs_to_team INTEGER, 
+ capacity INTEGER CHECK(capacity>0),
+ PRIMARY KEY(stadium_id),
+ UNIQUE (belongs_to_team),
+ FOREIGN KEY(belongs_to_team) REFERENCES teams (team_id) ON DELETE CASCADE
+ );
+
+
+
+
+
+
+-- No need to add lines for Teams bc the Stadiums table exists. 
+
+ 
+
  
 
 CREATE TABLE matches  
