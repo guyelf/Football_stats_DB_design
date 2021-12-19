@@ -592,7 +592,7 @@ def playerIsWinner(playerID: int, matchID: int) -> bool:
         if len(_selected_rows.rows) == 0:
             return False
         else:
-            return _selected_rows.rows[0][0]  # should be one value --> player_id =! 0 --> which is equals to TRUE
+            return not not _selected_rows.rows[0][0]  # should be one value --> player_id =! 0 --> which is equals to TRUE
 
     except Exception as e:
         return False
