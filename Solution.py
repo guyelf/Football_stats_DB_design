@@ -12,15 +12,111 @@ from psycopg2 import sql
 # it's preferred to create them
 # BASIC DESIGN IS PROVIDED IN THE DB SCHEMA THAT I CREATED
 def createTables():
-    pass
+    try:
+        conn = Connector.DBConnector()
+
+        query = sql.SQL("""
+                        CREATE TABLE teams (
+                            team_id INTEGER CHECK(team_id>0),
+                            PRIMARY KEY(team_id)
+                        )
+                        """)
+        conn.execute(query)
+        
+        query = sql.SQL("""
+                        CREATE TABLE players (
+                            player_id INTEGER CHECK(player_id>0),
+                            team_id INTEGER,
+                            age INTEGER CHECK(age>0),
+                            height DECIMAL CHECK(height>0), 
+                            prefered_foot TEXT CHECK(UPPER(prefered_foot)='LEFT' OR UPPER(prefered_foot)='RIGHT'), 
+                            PRIMARY KEY(player_id),
+                            FOREIGN KEY(team_id) REFERENCES teams (team_id) ON DELETE CASCADE
+                        )
+                        """)
+        conn.execute(query)
+
+        query = sql.SQL("""
+                        CREATE TABLE stadiums (
+                            stadium_id INTEGER CHECK(stadium_id>0),
+                            belongs_to_team INTEGER, 
+                            capacity INTEGER CHECK(capacity>0),
+                            PRIMARY KEY(stadium_id),
+                            UNIQUE (belongs_to_team),
+                            FOREIGN KEY(belongs_to_team) REFERENCES teams (team_id) ON DELETE CASCADE
+                        )
+                        """)
+        conn.execute(query)
+
+        query = sql.SQL("""
+                        CREATE TABLE matches (
+                            match_id INTEGER CHECK(match_id>0),
+                            competition TEXT CHECK(UPPER(competition)='INTERNATIONAL' OR UPPER(competition)='DOMESTIC'),
+                            home_team_id INTEGER,
+                            away_team_id INTEGER CHECK(away_team_id != home_team_id),
+                            PRIMARY KEY(match_id),
+                            FOREIGN KEY(home_team_id) REFERENCES teams (team_id),
+                            FOREIGN KEY(away_team_id) REFERENCES teams (team_id)
+                            ON DELETE CASCADE
+                        )
+                        """)
+        conn.execute(query)
+
+        query = sql.SQL("""
+                        CREATE TABLE goals (
+                            num_goals INTEGER check(num_goals >= 0),
+                            player_id INTEGER,
+                            match_id INTEGER,
+                            stadium_id INTEGER,
+                            PRIMARY KEY (num_goals,player_id,match_id), --redundent to add the stadium match_id is unique enought here
+                            FOREIGN KEY(player_id) REFERENCES players (player_id),
+                            FOREIGN KEY(stadium_id) REFERENCES stadiums (stadium_id),
+                            FOREIGN KEY(match_id) REFERENCES matches (match_id)
+                            ON DELETE CASCADE
+                        )
+                        """)
+        conn.execute(query)
+
+        query = sql.SQL("""
+                        CREATE TABLE spectators (
+                            num_attendances INTEGER check(num_attendances >= 0),
+                            match_id INTEGER,
+                            stadium_id INTEGER,
+                            FOREIGN KEY(stadium_id) REFERENCES stadiums (stadium_id),
+                            FOREIGN KEY(match_id) REFERENCES matches (match_id)
+                            ON DELETE CASCADE
+                        )
+                        """)
+        conn.execute(query)
+
+    finally:
+        conn.close()
 
 
 def clearTables():
-    pass
+    try:
+        conn = Connector.DBConnector()
+
+        query = sql.SQL("""
+                        TRUNCATE matches, players, stadiums, teams, goals, spectators CASCADE
+                        """)
+        conn.execute(query)
+        
+    finally:
+        conn.close()
 
 
 def dropTables():
-    pass
+    try:
+        conn = Connector.DBConnector()
+
+        query = sql.SQL("""
+                        DROP TABLE matches, players, stadiums, teams, goals, spectators CASCADE
+                        """)
+        conn.execute(query)
+        
+    finally:
+        conn.close()
 
 
 # ####### ----------------------------------------------------------------------------
