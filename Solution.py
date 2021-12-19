@@ -297,15 +297,72 @@ def playerDidntScoreInMatch(match: Match, player: Player) -> ReturnValue:
 
 
 def matchInStadium(match: Match, stadium: Stadium, attendance: int) -> ReturnValue:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("""
+                        INSERT INTO Spectators
+                        VALUES({attendance}, {match}, {stadium})
+                        """).format(attendance=sql.Literal(attendance), match=sql.Literal(match.getMatchID()), stadium=sql.Literal(stadium.getStadiumID()))
+        conn.execute(query)
+
+        return ReturnValue.OK
+
+
+    except DatabaseException.CHECK_VIOLATION as e:
+        return ReturnValue.BAD_PARAMS
+    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
+        return ReturnValue.NOT_EXISTS
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        return ReturnValue.ALREADY_EXISTS
+    except Exception as e:
+        return ReturnValue.ERROR
+    finally:
+        conn.close()
 
 
 def matchNotInStadium(match: Match, stadium: Stadium) -> ReturnValue:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("""
+                        DELETE FROM Spectators
+                        WHERE match_id={match} AND stadium_id={stadium}
+                        """).format(match=sql.Literal(match.getMatchID()), stadium=sql.Literal(stadium.getStadiumID()))
+        rows_affected, _ = conn.execute(query)
+
+        if rows_affected == 0:
+            return ReturnValue.NOT_EXISTS
+        else:
+            return ReturnValue.OK
+
+    except Exception as e:
+        return ReturnValue.ERROR 
+    finally:
+        conn.close()
 
 
 def averageAttendanceInStadium(stadiumID: int) -> float:
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("""
+                        SELECT AVG(numAttendance) FROM Spectators
+                        WHERE stadium_id={stadium}
+                        GROUP BY stadium_id
+                        """).format(stadium=sql.Literal(stadium.getStadiumID()))
+        rows_affected, output = conn.execute(query)
+
+        if rows_affected == 0:
+            return 0
+        else:
+            return ouput[0][0]
+
+    except Exception as e:
+        return -1
+
+    finally:
+        conn.close()
 
 
 def stadiumTotalGoals(stadiumID: int) -> int:
