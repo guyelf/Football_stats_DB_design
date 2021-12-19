@@ -7,7 +7,7 @@
  CREATE TABLE teams 
 (team_id INTEGER CHECK(player_id>0),
  PRIMARY KEY(team_id),
- ON DELETE CASCADE);
+ ON DELETE CASCADE) ;
 
 
 
@@ -34,23 +34,14 @@
  );
 
 
-
-
-
-
--- No need to add lines for Teams bc the Stadiums table exists. 
-
- 
-
- 
-
+  
 CREATE TABLE matches  
 (match_id INTEGER CHECK(match_id>0),
  competition TEXT CHECK(UPPER(competition)='INTERNATIONAL' OR UPPER(competition)='DOMESTIC'),
  home_team_id INTEGER,
  away_team_id INTEGER CHECK(away_team_id != home_team_id),
  PRIMARY KEY(match_id),
- FOREIGN KEY(home_team_id) REFERENCES teams (team_id),
+ FOREIGN KEY(home_team_id) REFERENCES teams (team_id) ON DELETE CASCADE,
  FOREIGN KEY(away_team_id) REFERENCES teams (team_id)
  ON DELETE CASCADE);
  
@@ -61,8 +52,8 @@ CREATE TABLE goals
  match_id INTEGER,
  stadium_id INTEGER,
  PRIMARY KEY (num_goals,player_id,match_id), --redundent to add the stadium match_id is unique enought here
- FOREIGN KEY(player_id) REFERENCES players (player_id),
- FOREIGN KEY(stadium_id) REFERENCES stadiums (stadium_id),
+ FOREIGN KEY(player_id) REFERENCES players (player_id)  ON DELETE CASCADE,
+ FOREIGN KEY(stadium_id) REFERENCES stadiums (stadium_id)  ON DELETE CASCADE,
  FOREIGN KEY(match_id) REFERENCES matches (match_id)
  ON DELETE CASCADE);
  
@@ -71,8 +62,8 @@ CREATE TABLE goals
 (num_attendances INTEGER check(num_attendances >= 0),
  match_id INTEGER,
  stadium_id INTEGER,
- FOREIGN KEY(stadium_id) REFERENCES stadiums (stadium_id),
- FOREIGN KEY(match_id) REFERENCES matches (match_id)
+ FOREIGN KEY(stadium_id) REFERENCES stadiums (stadium_id) ON DELETE CASCADE,
+ FOREIGN KEY(match_id) REFERENCES matches (match_id) 
  ON DELETE CASCADE); 
 
 
@@ -133,13 +124,13 @@ Output:
  Note: only player who play for this team can be in this list.
 */
 
--- aux view:
+-- aux view: - UPDATED
 CREATE VIEW top_players_view AS 
-SELECT sum(g.NumGoals) as num_goals, g.player_id, t.team_id
-FROM teams t INNER JOIN goals g USING (player_id)
-GROUP BY g.player_id, t.team_id;
+SELECT SUM(g.NumGoals) as num_goals, g.player_id, p.team_id
+FROM players p INNER JOIN goals g USING (player_id)
+GROUP BY p.team_id, g.player_id;
 
---Acutal answer: for the input teamID
+--Acutal answer: for the input teamID - UNCHANGED
 SELECT player_id
 FROM top_players_view
 WHERE team_id = @teamID
@@ -245,7 +236,7 @@ Output:
 
 
 CREATE VIEW active_teams_view AS
-SELECT DISTINCT t.team_id AS active_team_id
+SELECT t.team_id AS active_team_id
 FROM teams t
 WHERE t.team_id IN (SELECT away_team_id FROM matches) OR t.team_id IN (SELECT home_team_id FROM matches)
 
@@ -279,9 +270,9 @@ Output:
 
 */
 
-CREATE VIEW rich_teams_view AS
+CREATE VIEW rich_teams_view AS -- UPDATED
 SELECT t.team_id as team_id
-FROM teams t INNER JOIN stadiums s ON (t.stadium = s.stadium_id)
+FROM teams t INNER JOIN stadiums s ON (t.team_id = s.belongs_to_team)
 WHERE s.capacity > 55000
 
 
@@ -331,20 +322,4 @@ SELECT team_id
 FROM popular_teams_view 
 ORDER BY team_id desc 
 LIMIT 10  
-
-
-
-
-
-CREATE VIEW home_matches AS 
-SELECT t.team_id, m.match_id
-FROM teams t INNER JOIN matches m ON (t.team_id = m.home_team_id)
-
-SELECT team_id
-FROM home_matches hm 
-WHERE match_id
-
-
-
-
 
