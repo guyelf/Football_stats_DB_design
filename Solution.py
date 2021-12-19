@@ -213,7 +213,7 @@ def addPlayer(player: Player) -> ReturnValue:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("INSERT INTO players " +
-                        "VALUES({playerID,teamId,age,height,foot})").format(
+                        "VALUES({playerID},{teamId},{age},{height},{foot})").format(
             playerID=sql.Literal(player.getPlayerID()),
             teamId=sql.Literal(player.getTeamID()),
             age=sql.Literal(player.getAge()),
