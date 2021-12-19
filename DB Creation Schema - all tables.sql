@@ -5,9 +5,8 @@
  --DB CREATION PART - all the tables created hence not needed to re-run again. 
 
  CREATE TABLE teams 
-(team_id INTEGER CHECK(player_id>0),
- PRIMARY KEY(team_id),
- ON DELETE CASCADE) ;
+(team_id INTEGER CHECK(team_id>0),
+ PRIMARY KEY(team_id));
 
 
 
@@ -126,7 +125,7 @@ Output:
 
 -- aux view: - UPDATED
 CREATE VIEW top_players_view AS 
-SELECT SUM(g.NumGoals) as num_goals, g.player_id, p.team_id
+SELECT SUM(g.num_goals) as num_goals, g.player_id, p.team_id
 FROM players p INNER JOIN goals g USING (player_id)
 GROUP BY p.team_id, g.player_id;
 
@@ -158,8 +157,13 @@ Output:
 */
 
 -- AUX view
+/* Explanation about this view:
+INNER JOIN ON THE SAME TABLE - goals 2 times and differ by the players -> players are different in each row, but for the same matches.
+And count the number of appearances these players have as scorer and as Close Players.
+Then filtering by the definition of Close Players. 
+*/
 CREATE VIEW close_players_view AS
-SELECT g1.player_id AS score_player, g2.player_id as close_players, COUNT(g1.player_id) as num_plays_of_scorer
+SELECT g1.player_id AS score_player, g2.player_id as close_players
 FROM goals g1 INNER JOIN goals g2 USING (match_id)
 WHERE g1.player_id != g2.player_id 
 GROUP BY g1.player_id, g2.player_id
@@ -213,7 +217,7 @@ case of an error.
 
 --Aux view - returns the match_id with the amount of goals scored there. 
 CREATE VIEW total_goals_view AS 
-SELECT SUM(NumGoals) sum_goals, match_id
+SELECT SUM(num_goals) sum_goals, match_id
 FROM goals
 GROUP BY match_id
 
@@ -302,24 +306,25 @@ Output:
 -- Need to grab the team ids that played as 'Home'
 -- and have more than 40k spectators in every-game they played. 
 
+
+-- Selects all the teams that had over 40,000 spectators in their home game. 
 CREATE VIEW popular_matches_view AS
 SELECT m.home_team_id 
 FROM spectators s INNER JOIN matches m USING (match_id)
-WHERE s.num_attendances > 40000 and s.stadium_id IS NOT NONE
+WHERE s.num_attendances > 40000 and s.stadium_id IS NOT NULL
 
+
+-- Selects all the teams that had less than 40,000 spectators in their home game or the Stadium ID was not defined. 
 CREATE VIEW not_popular_mathces_view AS 
 SELECT m.home_team_id 
 FROM spectators s INNER JOIN matches m USING (match_id)
-WHERE s.num_attendances <= 40000 
+WHERE s.num_attendances <= 40000 or s.stadium_id IS NULL
 
 
-CREATE_VIEW popular_teams_view as
-SELECT home_team_id FROM popular_matches_view
-EXCEPT
-SELECT home_team_id FROM not_popular_mathces_view
-
-SELECT team_id
-FROM popular_teams_view 
-ORDER BY team_id desc 
+SELECT m.home_team_id
+FROM matches m
+WHERE m.home_team_id IN (SELECT m.home_team_id FROM popular_matches_view) AND
+m.home_team_id NOT IN (SELECT m.home_team_id FROM not_popular_mathces_view)  
+ORDER BY m.home_team_id desc 
 LIMIT 10  
 
