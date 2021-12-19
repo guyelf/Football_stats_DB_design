@@ -89,6 +89,86 @@ def createTables():
                         """)
         conn.execute(query)
 
+
+
+        # create all views
+
+        query = sql.SQL("""
+                        CREATE VIEW attractive_stadiums AS 
+                            SELECT sum(num_goals) as attractiveness, stadium_id
+                            FROM goals
+                            GROUP BY stadium_id
+                        """)
+        conn.execute(query)
+
+        query = sql.SQL("""
+                        CREATE VIEW top_players_view AS 
+                            SELECT SUM(g.num_goals) as num_goals, g.player_id, p.team_id
+                            FROM players p INNER JOIN goals g USING (player_id)
+                            GROUP BY p.team_id, g.player_id
+                        """)
+        conn.execute(query)
+
+        query = sql.SQL("""
+                        CREATE VIEW close_players_view AS
+                            SELECT g1.player_id AS score_player, g2.player_id as close_players
+                            FROM goals g1 INNER JOIN goals g2 USING (match_id)
+                            WHERE g1.player_id != g2.player_id 
+                            GROUP BY g1.player_id, g2.player_id
+                            HAVING COUNT(g2.player_id) >= 0.5*COUNT(g1.player_id)
+                        """)
+        conn.execute(query)
+
+        query = sql.SQL("""
+                        CREATE VIEW total_goals_view AS 
+                            SELECT SUM(num_goals) sum_goals, match_id
+                            FROM goals
+                            GROUP BY match_id
+                        """)
+        conn.execute(query)
+
+        query = sql.SQL("""
+                        CREATE VIEW active_teams_view AS
+                            SELECT t.team_id AS active_team_id
+                            FROM teams t
+                            WHERE t.team_id IN (SELECT away_team_id FROM matches) OR t.team_id IN (SELECT home_team_id FROM matches)
+                        """)
+        conn.execute(query)
+
+        query = sql.SQL("""
+                        CREATE VIEW active_tall_teams_view AS 
+                            SELECT p.team_id as team_id
+                            FROM active_teams_view a INNER JOIN players p ON (a.active_team_id = p.team_id)
+                            WHERE p.height >= 190
+                            GROUP BY p.team_id 
+                            HAVING COUNT(p.player_id) >= 2
+                        """)
+        conn.execute(query)
+
+        query = sql.SQL("""
+                        CREATE VIEW rich_teams_view AS
+                            SELECT t.team_id as team_id
+                            FROM teams t INNER JOIN stadiums s ON (t.team_id = s.belongs_to_team)
+                            WHERE s.capacity > 55000
+                        """)
+        conn.execute(query)
+
+        query = sql.SQL("""
+                        CREATE VIEW popular_matches_view AS
+                            SELECT m.home_team_id 
+                            FROM spectators s INNER JOIN matches m USING (match_id)
+                            WHERE s.num_attendances > 40000 and s.stadium_id IS NOT NULL
+                        """)
+        conn.execute(query)
+
+        query = sql.SQL("""
+                        CREATE VIEW not_popular_mathces_view AS 
+                            SELECT m.home_team_id 
+                            FROM spectators s INNER JOIN matches m USING (match_id)
+                            WHERE s.num_attendances <= 40000 or s.stadium_id IS NULL
+                        """)
+        conn.execute(query)
+
     finally:
         conn.close()
 
