@@ -586,7 +586,7 @@ def playerIsWinner(playerID: int, matchID: int) -> bool:
         conn = Connector.DBConnector()
         query = sql.SQL("SELECT g.player_id " +
                         "FROM goals g INNER JOIN total_goals_view tg USING(match_id)" +
-                        "WHERE g.player_id = {playerID} AND g.match_id = {matchID} AND g.NumGoals >= (0.5*tg.sum_goals) ").format(matchID=sql.Literal(matchID), playerID=sql.Literal(playerID))
+                        "WHERE g.player_id = {playerID} AND g.match_id = {matchID} AND g.num_goals >= (0.5*tg.sum_goals) ").format(matchID=sql.Literal(matchID), playerID=sql.Literal(playerID))
         rows_effected, _selected_rows = conn.execute(query)
 
         if len(_selected_rows.rows) == 0:
