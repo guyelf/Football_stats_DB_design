@@ -126,6 +126,7 @@ def addTeam(teamID: int) -> ReturnValue:
         conn = Connector.DBConnector()
         query = sql.SQL("INSERT INTO teams(team_id) VALUES({teamID})").format(teamID=sql.Literal(teamID))
         rows_effected, _selected_rows = conn.execute(query)
+        return ReturnValue.OK
     except DatabaseException.ConnectionInvalid as e:
         return ReturnValue.ERROR
     except DatabaseException.NOT_NULL_VIOLATION as e:
@@ -140,7 +141,6 @@ def addTeam(teamID: int) -> ReturnValue:
         print(e)
     finally:
         conn.close()
-        return ReturnValue.OK
 
 
 def addMatch(match: Match) -> ReturnValue:
@@ -148,12 +148,14 @@ def addMatch(match: Match) -> ReturnValue:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("INSERT INTO matches " +
-                        "VALUES({matchID,competition,homeTeamID,awayTeamID})").format(
+                        "VALUES({matchID},{competition},{homeTeamID},{awayTeamID})").format(
             matchID=sql.Literal(match.getMatchID()),
             competition=sql.Literal(match.getCompetition()),
             homeTeamID=sql.Literal(match.getHomeTeamID()),
             awayTeamID=sql.Literal(match.getAwayTeamID()))
         rows_effected, _selected_rows = conn.execute(query)
+        return ReturnValue.OK
+
     except DatabaseException.ConnectionInvalid as e:
         return ReturnValue.ERROR
     except DatabaseException.UNIQUE_VIOLATION as e:
@@ -168,7 +170,6 @@ def addMatch(match: Match) -> ReturnValue:
         print(e)
     finally:
         conn.close()
-        return ReturnValue.OK
 
 
 def getMatchProfile(matchID: int) -> Match:
@@ -179,11 +180,11 @@ def getMatchProfile(matchID: int) -> Match:
                         "FROM matches " +
                         "WHERE match_id = {matchID}").format(matchID=sql.Literal(matchID))
         rows_effected, _selected_rows = conn.execute(query)
+        return Match(*_selected_rows[0])  # unpack of the tuple (should be only one)
     except Exception as e:
         return Match.badMatch()
     finally:
         conn.close()
-        return Match(*_selected_rows[0])  # unpack of the tuple (should be only one)
 
 # confirmed it's ok to use IF on rows_effected based on:
 # todo: https://piazza.com/class/kqz4dh15z2p1m1?cid=74
@@ -197,13 +198,14 @@ def deleteMatch(match: Match) -> ReturnValue:
         rows_effected, _selected_rows = conn.execute(query)
         if rows_effected == 0:
             return ReturnValue.NOT_EXISTS
+        else:
+            return ReturnValue.OK
     except DatabaseException.ConnectionInvalid as e:
         return ReturnValue.ERROR
     except Exception as e:
         print(e)
     finally:
         conn.close()
-        return ReturnValue.OK
 
 
 def addPlayer(player: Player) -> ReturnValue:
@@ -218,6 +220,8 @@ def addPlayer(player: Player) -> ReturnValue:
             height=sql.Literal(player.getHeight()),
             foot=sql.Literal(player.getFoot()))
         rows_effected, _selected_rows = conn.execute(query)
+
+        return ReturnValue.OK
     except DatabaseException.ConnectionInvalid as e:
         return ReturnValue.ERROR
     except DatabaseException.UNIQUE_VIOLATION as e:
@@ -232,7 +236,6 @@ def addPlayer(player: Player) -> ReturnValue:
         print(e)
     finally:
         conn.close()
-        return ReturnValue.OK
 
 
 def getPlayerProfile(playerID: int) -> Player:
@@ -245,12 +248,14 @@ def getPlayerProfile(playerID: int) -> Player:
         rows_effected, _selected_rows = conn.execute(query)
 
         if len(_selected_rows.rows) == 0:  # No rows were fetched for that player.
-            return ReturnValue.NOT_EXISTS;
+            return ReturnValue.NOT_EXISTS
+        else:
+            return Player(*_selected_rows[0])  # unpack of the tuple (should be only one)
+
     except Exception as e:
         return Player.badPlayer()
     finally:
         conn.close()
-        return Player(*_selected_rows[0])  # unpack of the tuple (should be only one)
 
 
 def deletePlayer(player: Player) -> ReturnValue:
@@ -262,13 +267,15 @@ def deletePlayer(player: Player) -> ReturnValue:
         rows_effected, _selected_rows = conn.execute(query)
         if rows_effected == 0:
             return ReturnValue.NOT_EXISTS
+        else:
+            return ReturnValue.OK
+
     except DatabaseException.ConnectionInvalid as e:
         return ReturnValue.ERROR
     except Exception as e:
         print(e)
     finally:
         conn.close()
-        return ReturnValue.OK
 
 
 def addStadium(stadium: Stadium) -> ReturnValue:
@@ -282,6 +289,8 @@ def addStadium(stadium: Stadium) -> ReturnValue:
             belongsTo=sql.Literal(Stadium.getBelongsTo())
         )
         rows_effected, _selected_rows = conn.execute(query)
+        return ReturnValue.OK
+
     except DatabaseException.ConnectionInvalid as e:
         return ReturnValue.ERROR
     except DatabaseException.UNIQUE_VIOLATION as e:
@@ -298,7 +307,6 @@ def addStadium(stadium: Stadium) -> ReturnValue:
         print(e)
     finally:
         conn.close()
-        return ReturnValue.OK
 
 
 def getStadiumProfile(stadiumID: int) -> Stadium:
@@ -312,11 +320,13 @@ def getStadiumProfile(stadiumID: int) -> Stadium:
 
         if len(_selected_rows) == 0: # in case the stadium doesn't exist
             return Stadium.badStadium()
+        else:
+            return Stadium(*_selected_rows[0])  # unpack of the tuple (should be only one - id is pk)
+
     except Exception as e:
         return Stadium.badStadium()
     finally:
         conn.close()
-        return Stadium(*_selected_rows[0])  # unpack of the tuple (should be only one - id is pk)
 
 
 def deleteStadium(stadium: Stadium) -> ReturnValue:
@@ -328,13 +338,15 @@ def deleteStadium(stadium: Stadium) -> ReturnValue:
         rows_effected, _selected_rows = conn.execute(query)
         if rows_effected == 0:
             return ReturnValue.NOT_EXISTS
+        else:
+            return ReturnValue.OK
+
     except DatabaseException.ConnectionInvalid as e:
         return ReturnValue.ERROR
     except Exception as e:
         print(e)
     finally:
         conn.close()
-        return ReturnValue.OK
 
 # Part 3.3 Implementation - Basic API:
 #todo: How & Where to keep this data - which tables
@@ -473,12 +485,13 @@ def stadiumTotalGoals(stadiumID: int) -> int:
 
         if len(_selected_rows) == 0:
             return 0
+        else:
+            return _selected_rows.rows[0][0] # should be one value
 
     except Exception as e:
         return -1
     finally:
         conn.close()
-        return _selected_rows.rows[0][0] # should be one value
 
 
 def playerIsWinner(playerID: int, matchID: int) -> bool:
@@ -492,11 +505,13 @@ def playerIsWinner(playerID: int, matchID: int) -> bool:
 
         if len(_selected_rows) == 0:
             return False
+        else:
+            return _selected_rows.rows[0][0]  # should be one value --> player_id =! 0 --> which is equals to TRUE
+
     except Exception as e:
         return False
     finally:
         conn.close()
-        return _selected_rows.rows[0][0]  # should be one value --> player_id =! 0 --> which is equals to TRUE
 
 
 def getActiveTallTeams() -> List[int]:
@@ -508,12 +523,12 @@ def getActiveTallTeams() -> List[int]:
                         "ORDER BY p.team_id desc " +
                         "LIMIT 5 ")
         rows_effected, _selected_rows = conn.execute(query)
+        return _selected_rows.rows # should return a list
 
     except Exception as e:
         return []
     finally:
         conn.close()
-        return _selected_rows.rows # should return a list
 
 
 def getActiveTallRichTeams() -> List[int]:
@@ -525,12 +540,12 @@ def getActiveTallRichTeams() -> List[int]:
                         "ORDER BY a.team_id asc " +
                         "LIMIT 5  ")
         rows_effected, _selected_rows = conn.execute(query)
+        return _selected_rows.rows  # should return a list
 
     except Exception as e:
         return []
     finally:
         conn.close()
-        return _selected_rows.rows  # should return a list
 
 
 def popularTeams() -> List[int]:
@@ -542,12 +557,12 @@ def popularTeams() -> List[int]:
                         "ORDER BY team_id desc " +
                         "LIMIT 10 ")
         rows_effected, _selected_rows = conn.execute(query)
+        return _selected_rows.rows  # should return a list
 
     except Exception as e:
         return []
     finally:
         conn.close()
-        return _selected_rows.rows  # should return a list
 
 # 3.4 Advanced API - done
 
@@ -560,12 +575,12 @@ def getMostAttractiveStadiums() -> List[int]:
                         "WHERE attractiveness > 0 " +
                         "ORDER BY attractiveness desc, stadium_id asc ")
         rows_effected, _selected_rows = conn.execute(query)
+        return _selected_rows.rows # Should flat the list of tuples? - This will require more code in python
 
     except Exception as e:
         return []
     finally:
         conn.close()
-        return _selected_rows.rows # Should flat the list of tuples? - This will require more code in python
 
 
 def mostGoalsForTeam(teamID: int) -> List[int]:
@@ -578,12 +593,12 @@ def mostGoalsForTeam(teamID: int) -> List[int]:
                         "ORDER BY num_goals desc, player_id desc " +
                         "LIMIT 5 ").format(teamID=sql.Literal(teamID))
         rows_effected, _selected_rows = conn.execute(query)
+        return _selected_rows.rows
 
     except Exception as e:
         return []
     finally:
         conn.close()
-        return _selected_rows.rows
 
 
 def getClosePlayers(playerID: int) -> List[int]:
@@ -596,12 +611,12 @@ def getClosePlayers(playerID: int) -> List[int]:
                         "ORDER BY close_players asc " +
                         "LIMIT 10 ").format(playerID=sql.Literal(playerID))
         rows_effected, _selected_rows = conn.execute(query)
+        return _selected_rows.rows
 
     except Exception as e:
         return []
     finally:
         conn.close()
-        return _selected_rows.rows
 
 
 if __name__ == '__main__':
