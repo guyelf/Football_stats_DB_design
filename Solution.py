@@ -592,7 +592,7 @@ def playerIsWinner(playerID: int, matchID: int) -> bool:
         if len(_selected_rows.rows) == 0:
             return False
         else:
-            return not not _selected_rows.rows[0][0]  # should be one value --> player_id =! 0 --> which is equals to TRUE
+            return bool(_selected_rows.rows[0][0])  # should be one value --> player_id =! 0 --> which is equals to TRUE
 
     except Exception as e:
         return False
@@ -606,10 +606,11 @@ def getActiveTallTeams() -> List[int]:
         conn = Connector.DBConnector()
         query = sql.SQL("SELECT team_id " +
                         "FROM active_tall_teams_view  " +
-                        "ORDER BY p.team_id desc " +
+                        "ORDER BY team_id desc " +
                         "LIMIT 5 ")
         rows_effected, _selected_rows = conn.execute(query)
-        return _selected_rows.rows # should return a list
+        return [row[0] for row in _selected_rows.rows] # based on https://piazza.com/class/kqz4dh15z2p1m1?cid=97
+
 
     except Exception as e:
         return []
@@ -626,7 +627,7 @@ def getActiveTallRichTeams() -> List[int]:
                         "ORDER BY a.team_id asc " +
                         "LIMIT 5  ")
         rows_effected, _selected_rows = conn.execute(query)
-        return _selected_rows.rows  # should return a list
+        return [row[0] for row in _selected_rows.rows]  # should return a list
 
     except Exception as e:
         return []
@@ -638,12 +639,16 @@ def popularTeams() -> List[int]:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("SELECT team_id " +
-                        "FROM popular_teams_view  " +
-                        "ORDER BY team_id desc " +
-                        "LIMIT 10 ")
+        query = sql.SQL("""
+                        SELECT m.home_team_id
+                        FROM matches m
+                        WHERE m.home_team_id IN (SELECT m.home_team_id FROM popular_matches_view) AND
+                        m.home_team_id NOT IN (SELECT m.home_team_id FROM not_popular_mathces_view)  
+                        ORDER BY m.home_team_id desc 
+                        LIMIT 10        
+                        """)
         rows_effected, _selected_rows = conn.execute(query)
-        return _selected_rows.rows  # should return a list
+        return [row[0] for row in _selected_rows.rows]  # should return a list
 
     except Exception as e:
         return []
@@ -661,7 +666,7 @@ def getMostAttractiveStadiums() -> List[int]:
                         "WHERE attractiveness > 0 " +
                         "ORDER BY attractiveness desc, stadium_id asc ")
         rows_effected, _selected_rows = conn.execute(query)
-        return _selected_rows.rows # Should flat the list of tuples? - This will require more code in python
+        return [row[0] for row in _selected_rows.rows]
 
     except Exception as e:
         return []
@@ -679,7 +684,7 @@ def mostGoalsForTeam(teamID: int) -> List[int]:
                         "ORDER BY num_goals desc, player_id desc " +
                         "LIMIT 5 ").format(teamID=sql.Literal(teamID))
         rows_effected, _selected_rows = conn.execute(query)
-        return _selected_rows.rows
+        return [row[0] for row in _selected_rows.rows]
 
     except Exception as e:
         return []
@@ -697,7 +702,7 @@ def getClosePlayers(playerID: int) -> List[int]:
                         "ORDER BY close_players asc " +
                         "LIMIT 10 ").format(playerID=sql.Literal(playerID))
         rows_effected, _selected_rows = conn.execute(query)
-        return _selected_rows.rows
+        return [row[0] for row in _selected_rows.rows]
 
     except Exception as e:
         return []
