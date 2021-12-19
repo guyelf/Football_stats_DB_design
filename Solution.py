@@ -60,9 +60,8 @@ def createTables():
                             away_team_id INTEGER NOT NULL,
                             CHECK(away_team_id != home_team_id),
                             PRIMARY KEY(match_id),
-                            FOREIGN KEY(home_team_id) REFERENCES teams (team_id),
-                            FOREIGN KEY(away_team_id) REFERENCES teams (team_id)
-                            ON DELETE CASCADE
+                            FOREIGN KEY(home_team_id) REFERENCES teams (team_id) ON DELETE CASCADE,
+                            FOREIGN KEY(away_team_id) REFERENCES teams (team_id) ON DELETE CASCADE
                         )
                         """)
         conn.execute(query)
@@ -75,7 +74,7 @@ def createTables():
                             stadium_id INTEGER,
                             PRIMARY KEY (num_goals,player_id,match_id), --redundent to add the stadium match_id is unique enought here
                             FOREIGN KEY(player_id) REFERENCES players (player_id),
-                            FOREIGN KEY(stadium_id) REFERENCES stadiums (stadium_id),
+                            FOREIGN KEY(stadium_id) REFERENCES stadiums (stadium_id) ON UPDATE CASCADE,
                             FOREIGN KEY(match_id) REFERENCES matches (match_id)
                             ON DELETE CASCADE
                         )
@@ -87,6 +86,7 @@ def createTables():
                             num_attendances INTEGER check(num_attendances >= 0),
                             match_id INTEGER NOT NULL,
                             stadium_id INTEGER,
+                            UNIQUE(match_id),
                             FOREIGN KEY(stadium_id) REFERENCES stadiums (stadium_id),
                             FOREIGN KEY(match_id) REFERENCES matches (match_id)
                             ON DELETE CASCADE
@@ -269,7 +269,7 @@ def getMatchProfile(matchID: int) -> Match:
                         "FROM matches " +
                         "WHERE match_id = {matchID}").format(matchID=sql.Literal(matchID))
         rows_effected, _selected_rows = conn.execute(query)
-        return Match(*_selected_rows[0])  # unpack of the tuple (should be only one)
+        return Match(*_selected_rows.rows[0])  # unpack of the tuple (should be only one)
     except Exception as e:
         return Match.badMatch()
     finally:
@@ -337,9 +337,9 @@ def getPlayerProfile(playerID: int) -> Player:
         rows_effected, _selected_rows = conn.execute(query)
 
         if len(_selected_rows.rows) == 0:  # No rows were fetched for that player.
-            return ReturnValue.NOT_EXISTS
+            return Player.badPlayer()
         else:
-            return Player(*_selected_rows[0])  # unpack of the tuple (should be only one)
+            return Player(*_selected_rows.rows[0])  # unpack of the tuple (should be only one)
 
     except Exception as e:
         return Player.badPlayer()
@@ -405,10 +405,10 @@ def getStadiumProfile(stadiumID: int) -> Stadium:
                         "WHERE stadium_id = {stadiumID}").format(stadiumID=sql.Literal(stadiumID))
         rows_effected, _selected_rows = conn.execute(query)
 
-        if len(_selected_rows) == 0: # in case the stadium doesn't exist
+        if len(_selected_rows.rows) == 0: # in case the stadium doesn't exist
             return Stadium.badStadium()
         else:
-            return Stadium(*_selected_rows[0])  # unpack of the tuple (should be only one - id is pk)
+            return Stadium(*_selected_rows.rows[0])  # unpack of the tuple (should be only one - id is pk)
 
     except Exception as e:
         return Stadium.badStadium()
@@ -542,7 +542,7 @@ def averageAttendanceInStadium(stadiumID: int) -> float:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("""
-                        SELECT AVG(numAttendance) FROM Spectators
+                        SELECT AVG(num_attendances) FROM Spectators
                         WHERE stadium_id={stadium}
                         GROUP BY stadium_id
                         """).format(stadium=sql.Literal(stadiumID))
@@ -551,7 +551,7 @@ def averageAttendanceInStadium(stadiumID: int) -> float:
         if rows_affected == 0:
             return 0
         else:
-            return output[0][0]
+            return output.rows[0][0]
 
     except Exception as e:
         return -1
@@ -570,7 +570,7 @@ def stadiumTotalGoals(stadiumID: int) -> int:
                         "GROUP BY stadium_id ").format(stadiumID=sql.Literal(stadiumID))
         rows_effected, _selected_rows = conn.execute(query)
 
-        if len(_selected_rows) == 0:
+        if len(_selected_rows.rows) == 0:
             return 0
         else:
             return _selected_rows.rows[0][0] # should be one value
@@ -590,7 +590,7 @@ def playerIsWinner(playerID: int, matchID: int) -> bool:
                         "WHERE g.player_id = {playerID} AND g.match_id = {matchID} AND g.NumGoals >= (0.5*tg.sum_goals) ").format(matchID=sql.Literal(matchID), playerID=sql.Literal(playerID))
         rows_effected, _selected_rows = conn.execute(query)
 
-        if len(_selected_rows) == 0:
+        if len(_selected_rows.rows) == 0:
             return False
         else:
             return _selected_rows.rows[0][0]  # should be one value --> player_id =! 0 --> which is equals to TRUE
