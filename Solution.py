@@ -39,8 +39,8 @@ def createTables():
         query = sql.SQL("""
                         CREATE TABLE stadiums (
                             stadium_id INTEGER CHECK(stadium_id>0),
-                            belongs_to_team INTEGER, 
                             capacity INTEGER CHECK(capacity>0),
+                            belongs_to_team INTEGER, 
                             PRIMARY KEY(stadium_id),
                             UNIQUE (belongs_to_team),
                             FOREIGN KEY(belongs_to_team) REFERENCES teams (team_id) ON DELETE CASCADE
@@ -283,10 +283,10 @@ def addStadium(stadium: Stadium) -> ReturnValue:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("INSERT INTO stadiums " +
-                        "VALUES({stadiumID,capacity,belongsTo})").format(
-            stadiumID=sql.Literal(Stadium.getStadiumID()),
-            capacity=sql.Literal(Stadium.getCapacity()),
-            belongsTo=sql.Literal(Stadium.getBelongsTo())
+                        "VALUES({stadiumID},{capacity},{belongsTo})").format(
+            stadiumID=sql.Literal(stadium.getStadiumID()),
+            capacity=sql.Literal(stadium.getCapacity()),
+            belongsTo=sql.Literal(stadium.getBelongsTo())
         )
         rows_effected, _selected_rows = conn.execute(query)
         return ReturnValue.OK
