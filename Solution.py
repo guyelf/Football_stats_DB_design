@@ -71,7 +71,7 @@ def createTables():
                             num_goals INTEGER check(num_goals >= 0),
                             player_id INTEGER NOT NULL,
                             match_id INTEGER NOT NULL,
-                            PRIMARY KEY (num_goals,player_id,match_id), --redundent to add the stadium match_id is unique enought here
+                            PRIMARY KEY (player_id,match_id), --redundent to add the stadium match_id is unique enought here
                             FOREIGN KEY(player_id) REFERENCES players (player_id),
                             FOREIGN KEY(match_id) REFERENCES matches (match_id)
                             ON DELETE CASCADE
