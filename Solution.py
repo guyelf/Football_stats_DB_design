@@ -563,7 +563,7 @@ def stadiumTotalGoals(stadiumID: int) -> int:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("SELECT SUM(num_goals) " +
+        query = sql.SQL("SELECT COALESCE(SUM(num_goals),0) " +
                         "FROM goals_stadium_view " +
                         "WHERE stadium_id = {stadiumID} " +
                         "GROUP BY stadium_id ").format(stadiumID=sql.Literal(stadiumID))
