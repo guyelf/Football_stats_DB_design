@@ -113,9 +113,9 @@ def createTables():
 
         query = sql.SQL("""
                         CREATE VIEW top_players_view AS 
-                            SELECT SUM(g.num_goals) as num_goals, g.player_id, p.team_id
-                            FROM players p INNER JOIN goals g USING (player_id)
-                            GROUP BY p.team_id, g.player_id
+                            SELECT COALESCE (SUM(g.num_goals),0) as num_goals, p.player_id, p.team_id
+                            FROM players p LEFT OUTER JOIN goals g USING (player_id)
+                            GROUP BY p.team_id, p.player_id;
                         """)
         conn.execute(query)
 
