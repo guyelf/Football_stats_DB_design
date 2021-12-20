@@ -98,14 +98,14 @@ def createTables():
 
         query = sql.SQL("""
                         CREATE VIEW goals_stadium_view AS
-                            SELECT g.num_goals, g.player_id, g.match_id, s.stadium_id
-                            FROM goals g INNER JOIN spectators s USING (match_id)
+                            SELECT g.*, s.stadium_id
+                            FROM goals g RIGHT OUTER JOIN spectators s USING (match_id)
                         """)
         conn.execute(query)
 
         query = sql.SQL("""
-                        CREATE VIEW attractive_stadiums AS 
-                            SELECT sum(num_goals) as attractiveness, stadium_id
+                        CREATE VIEW attractive_stadiums_view AS 
+                            SELECT COALESCE(sum(num_goals),0) as attractiveness, stadium_id
                             FROM goals_stadium_view
                             GROUP BY stadium_id
                         """)
@@ -642,8 +642,8 @@ def popularTeams() -> List[int]:
         query = sql.SQL("""
                         SELECT m.home_team_id
                         FROM matches m
-                        WHERE m.home_team_id IN (SELECT m.home_team_id FROM popular_matches_view) AND
-                        m.home_team_id NOT IN (SELECT m.home_team_id FROM not_popular_mathces_view)  
+                        WHERE m.home_team_id IN (SELECT home_team_id FROM popular_matches_view) AND
+                        m.home_team_id NOT IN (SELECT home_team_id FROM not_popular_mathces_view)  
                         ORDER BY m.home_team_id desc 
                         LIMIT 10        
                         """)
@@ -663,7 +663,6 @@ def getMostAttractiveStadiums() -> List[int]:
         conn = Connector.DBConnector()
         query = sql.SQL("SELECT stadium_id " +
                         "FROM attractive_stadiums_view " +
-                        "WHERE attractiveness > 0 " +
                         "ORDER BY attractiveness desc, stadium_id asc ")
         rows_effected, _selected_rows = conn.execute(query)
         return [row[0] for row in _selected_rows.rows]
