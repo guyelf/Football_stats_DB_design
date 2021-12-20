@@ -695,11 +695,25 @@ def getClosePlayers(playerID: int) -> List[int]:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("SELECT close_players " +
-                        "FROM close_players_view " +
-                        "WHERE score_player = {playerID} "
-                        "ORDER BY close_players asc " +
-                        "LIMIT 10 ").format(playerID=sql.Literal(playerID))
+
+        query = sql.SQL("""
+                        SELECT player_id
+                        FROM
+                            (
+                                SELECT g2.player_id, COALESCE (COUNT(*),0) AS match_scored
+                                FROM (SELECT player_id, match_id FROM goals WHERE player_id={playerID}) g1 INNER JOIN goals g2 USING (match_id)
+                                WHERE g1.player_id != g2.player_id
+                                GROUP BY g2.player_id
+                            ) p1
+                            RIGHT OUTER JOIN
+                            (
+                                SELECT player_id FROM players WHERE player_id != {playerID}
+                            ) p2
+                            USING (player_id)
+                        WHERE COALESCE (match_scored,0) >= 0.5*(SELECT COUNT(*) FROM goals WHERE player_id={playerID})
+                        ORDER BY p2.player_id
+                        LIMIT 10
+                        """).format(playerID=sql.Literal(playerID))
         rows_effected, _selected_rows = conn.execute(query)
         return [row[0] for row in _selected_rows.rows]
 
