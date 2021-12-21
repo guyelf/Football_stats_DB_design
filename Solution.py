@@ -711,17 +711,3 @@ def getClosePlayers(playerID: int) -> List[int]:
         return []
     finally:
         conn.close()
-
-
-if __name__ == '__main__':
-    conn = None
-    try:
-        conn = Connector.DBConnector()
-        query = sql.SQL("SELECT first_name FROM guy_test WHERE person_id < 10")
-        rows_affected, _selected_rows = conn.execute(query=query)
-    except Exception as e:
-        print(e)
-    finally:
-        conn.close()
-        print("This is the #rows selected:" + _selected_rows)
-        #print(rows_affected)
