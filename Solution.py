@@ -287,7 +287,7 @@ def deleteMatch(match: Match) -> ReturnValue:
     except DatabaseException.ConnectionInvalid as e:
         return ReturnValue.ERROR
     except Exception as e:
-        print(e)
+        return ReturnValue.ERROR
     finally:
         conn.close()
 
@@ -317,7 +317,7 @@ def addPlayer(player: Player) -> ReturnValue:
     except DatabaseException.FOREIGN_KEY_VIOLATION as e:
         return ReturnValue.BAD_PARAMS
     except Exception as e:
-        print(e)
+        ReturnValue.ERROR
     finally:
         conn.close()
 
@@ -357,7 +357,7 @@ def deletePlayer(player: Player) -> ReturnValue:
     except DatabaseException.ConnectionInvalid as e:
         return ReturnValue.ERROR
     except Exception as e:
-        print(e)
+        ReturnValue.ERROR
     finally:
         conn.close()
 
@@ -386,7 +386,7 @@ def addStadium(stadium: Stadium) -> ReturnValue:
     except DatabaseException.CHECK_VIOLATION as e:
         return ReturnValue.BAD_PARAMS
     except Exception as e:
-        print(e)
+        ReturnValue.ERROR
     finally:
         conn.close()
 
@@ -426,7 +426,7 @@ def deleteStadium(stadium: Stadium) -> ReturnValue:
     except DatabaseException.ConnectionInvalid as e:
         return ReturnValue.ERROR
     except Exception as e:
-        print(e)
+        ReturnValue.ERROR
     finally:
         conn.close()
 
