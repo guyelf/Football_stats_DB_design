@@ -120,16 +120,6 @@ def createTables():
         conn.execute(query)
 
         query = sql.SQL("""
-                        CREATE VIEW close_players_view AS
-                            SELECT g1.player_id AS score_player, g2.player_id as close_players
-                            FROM goals g1 INNER JOIN goals g2 USING (match_id)
-                            WHERE g1.player_id != g2.player_id 
-                            GROUP BY g1.player_id, g2.player_id
-                            HAVING COUNT(g2.player_id) >= 0.5*COUNT(g1.player_id)
-                        """)
-        conn.execute(query)
-
-        query = sql.SQL("""
                         CREATE VIEW total_goals_view AS 
                             SELECT SUM(num_goals) sum_goals, match_id
                             FROM goals
